@@ -12,17 +12,22 @@ on a Node.js WebSocket/RESTful server (CPU-based).
 WebGPU support. Uses neural voices with a StyleTTS 2 model.
 Great for lip-sync use cases and fully compatible with the
 [TalkingHead](https://github.com/met4citizen/TalkingHead).
-MIT licensed, doesn't use eSpeak NG or any other GPL-licensed
+MIT licensed, doesn't use eSpeak or any other GPL-licensed
 module.
 
-- **Cons**: WebGPU is only supported by default in Chrome and Edge
-desktop browsers. Takes time to load on first load and uses
-a lot of memory. WebGPU support in onnxruntime-node is still experimental
-and not released, so server-side inference is relatively slow. English
-is currently the only supported language.
+- **Cons**: Only the latest desktop browsers have
+[WebGPU support](https://caniuse.com/webgpu) enabled by default,
+the WASM fallback is much slower.
+Kokoro is a lightweight model, but it still takes time to
+load the first time and consumes a lot of memory.
+WebGPU support in onnx-runtime-node is still experimental
+and not released, so server-side inference is relatively slow.
+English is currently the only supported language.
 
-**👉 If you're using a Chrome or Edge desktop browser, check out the
-[In-browser Demo](https://met4citizen.github.io/HeadTTS/)!**
+**👉 If you're using a desktop browser, check out the
+[IN-BROWSER DEMO](https://met4citizen.github.io/HeadTTS/)!**
+If your browser doesn't have WebGPU support enabled,
+the demo app uses WASM as a fallback.
 
 The project uses [websockets/ws](https://github.com/websockets/ws) (MIT License),
 [hugginface/transformers.js (with ONNX Runtime)](https://github.com/huggingface/transformers.js/)
@@ -60,12 +65,12 @@ set the `workerModule` and `dictionaryURL` options explicitly,
 as the default relative paths will likely not work:
 
 ```javascript
-import { HeadTTS } from "https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.1/+esm";
+import { HeadTTS } from "https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.2/+esm";
 
 const headtts = new HeadTTS({
   /* ... */
-  workerModule: "https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.1/modules/worker-tts.mjs",
-  dictionaryURL: "https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.1/dictionaries/"
+  workerModule: "https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.2/modules/worker-tts.mjs",
+  dictionaryURL: "https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.2/dictionaries/"
 });
 ```
 
@@ -205,8 +210,6 @@ Type | Description | Example
 `date` | Speak the date in `value` with corresponding `subtitles` (optional). The date is presented as milliseconds from epoch. | <pre>{<br>  type: "date",<br>  value: Date.now(),<br>  subtitles: "02/05/2025"<br>}</pre>
 `time` | Speak the time in `value` with corresponding `subtitles` (optional). The time is presented as milliseconds from epoch. | <pre>{<br>  type: "time",<br>  value: Date.now(),<br>  subtitles: "6:45 PM"<br>}</pre>
 `break` | The length of the break in milliseconds in `value` with corresponding `subtitles` (optional). | <pre>{<br>  type: "break",<br>  value: 2000,<br>  subtitles: "..."<br>}</pre>
-
-*TODO: Add support for `audio` type.*
 
 An example using an array of input items:
 
@@ -389,12 +392,13 @@ Returns an audio object metadata that can be passed on the TalkingHead
   type: "audio",
   ref: 13,
   data: {
-    words: ["This ","is ","an ","example."],
-    wtimes: [443, 678, 780, 864],
-    wdurations: [192 ,91 ,52 ,868],
-    visemes: ["TH", "I", "SS", "I", "SS", "aa", "nn", "SS", "aa", "PP", "PP", "E", "DD"],
-    vtimes: [443, 494, 550, 678, 729, 780, 801, 989, 1126, 1175, 1225, 1275, 1354],
-    vdurations: [61, 66, 85, 61, 40, 31, 31, 69, 59, 60, 60, 89, 378],
+    words: ['This ', 'is ', 'an ', 'example.'],
+    wtimes: [440, 656, 876, 1050],
+    wdurations: [236, 240, 194, 1035],
+    visemes: ['TH', 'I', 'SS', 'I', 'SS', 'aa', 'nn', 'I', 'kk', 'SS', 'aa', 'PP', 'PP', 'E', 'RR'],
+    vtimes: [440, 472, 562, 656, 753, 876, 993, 1050, 1097, 1149, 1200, 1322, 1372, 1423, 1499],
+    vdurations: [52, 110, 74, 117, 75, 137, 47, 67, 72, 71, 142, 70, 71, 96, 399],
+    phonemes: ['ð', 'ɪ', 's', 'ɪ', 'z', 'æ', 'n', 'ɪ', 'ɡ', 'z', 'æ', 'm', 'p', 'ə', 'l'],  
     audioEncoding: "wav"
   }
 }
@@ -430,13 +434,14 @@ OK response:
 
 JSON|Description
 ---|---
-`audio` | AudioBuffer for `"wav"` audio encoding, ArrayBuffer of raw PCM 16bit LE samples for `"pcm"` audio encoding.
+`audio` | Base64 encoded WAV data for `"wav"` or raw PCM 16bit LE samples for `"pcm"` audio encoding.
 `words` | Array of words.
 `wtimes` | Array of word starting times for `words` in milliseconds.
 `wdurations` | Array of word durations for `words` in milliseconds.
 `visemes` | Array of Oculus viseme IDs: `'aa'`, `'E'`, `'I'`, `'O'`, `'U'`, `'PP'`, `'SS'`, `'TH'`, `'CH'`, `'FF'`, `'kk'`, `'nn'`, `'RR'`, `'DD'`, `'sil'`.
 `vtimes` | Array of viseme starting times for `visemes` in milliseconds.
 `vdurations` | Array of viseme durations for `visemes` in milliseconds.
+`phonemes` | Array of phonemes corresponding to the array of visemes.
 `audioEncoding` | Audio encoding: `"wav"` or `"pcm"`.
 
 Error response:
@@ -532,21 +537,23 @@ memory consumption becomes a concern.
 Unofficial latency results using my own
 [latency test app](https://github.com/met4citizen/HeadTTS/blob/main/tests/latency.html):
 
-TTS Engine | Setup |`FIL`<sup>\[1]</sup>|`FBL`<sup>\[2]</sup>|`RTF`<sup>\[3]</sup>
----|---|---|---|---
-HeadTTS, in-browser | Chrome, WebGPU/fp32 | 9.4s | 958ms | 0.30
-HeadTTS, in-browser | Edge, WebGPU/fp32 | 8.7s | 913ms | 0.28
-HeadTTS, in-browser | Chrome, WASM/q4 | 88.4s | 8752ms | 2.87
-HeadTTS, in-browser | Edge, WASM/q4 | 44.8s | 4437ms | 1.46
-HeadTTS, server | WebSocket, CPU/fp32, 1 thread | 6.8s | 712ms | 0.22
-HeadTTS, server | WebSocket, CPU/fp32, 4 threads | 6.0s | 2341ms | 0.20
-HeadTTS, server | REST, CPU/fp32, 1 thread | 7.0s | 793ms | 0.23
-HeadTTS, server | REST, CPU/fp32, 4 threads | 6.5s | 2638ms | 0.21
-ElevenLabs | WebSocket | 4.8s | 977ms | 0.20
-ElevenLabs | REST | 11.3s | 1097ms | 0.46
-ElevenLabs | REST, Flash_v2_5 | 4.8s | 581ms | 0.22
-Microsoft Azure TTS | Speech SDK, WebSocket | 1.1s | 274ms | 0.04
-Google TTS | REST | 0.79s | 67ms | 0.03
+TTS Engine/Setup |`FIL`<sup>\[1]</sup>|`FBL`<sup>\[2]</sup>|`RTF`<sup>\[3]</sup>
+---|---|---|---
+HeadTTS, Chrome, WebGPU/fp32 | 8.6s | 852ms | 0.27
+HeadTTS, Edge, WebGPU/fp32 | 8.8s | 858ms | 0.28
+HeadTTS, Safari, WebGPU/fp32 | 25.8s | 2437ms | 0.82
+HeadTTS, Chrome, WASM/q4 | 45.4s | 4404ms | 1.45
+HeadTTS, Edge, WASM/q4 | 45.5s | 4392ms | 1.45
+HeadTTS, Safari, WASM/q4 | 45.6s | 4447ms | 1.46
+HeadTTS, WebSocket, CPU/fp32, 1 thread | 6.8s | 712ms | 0.22
+HeadTTS, WebSocket, CPU/fp32, 4 threads | 6.0s | 2341ms | 0.20
+HeadTTS, REST, CPU/fp32, 1 thread | 7.0s | 793ms | 0.23
+HeadTTS, REST, CPU/fp32, 4 threads | 6.5s | 2638ms | 0.21
+ElevenLabs, WebSocket | 4.8s | 977ms | 0.20
+ElevenLabs, REST | 11.3s | 1097ms | 0.46
+ElevenLabs, REST, Flash_v2_5 | 4.8s | 581ms | 0.22
+Microsoft TTS, WebSocket (Speech SDK) | 1.1s | 274ms | 0.04
+Google TTS, REST | 0.79s | 67ms | 0.03
 
 
 <sup>\[1]</sup> *Finish latency*: Total time from sending text input to receiving
@@ -564,8 +571,8 @@ audio. If RTF < 1, synthesis is faster than real-time (i.e., good).
   <summary>CLICK HERE here to see the TEST SETUP.</summary>
 
 **Test setup**: Macbook Air M2 laptop, 8 cores, 16GB memory,
-macOS Sequoia 15.3.2, Metal2 GPU 10 cores, 300/50 Mbit/s internet connection.
-The latest Google Chrome/Edge desktop browsers.
+macOS Tahoe 26.0, Metal2 GPU 10 cores, 300/50 Mbit/s internet connection.
+The latest Google Chrome, Edge, Safari desktop browsers.
 
 All test cases use WAV or raw PCM 16bit LE format and the "List 1" of the
 [Harvard Sentences](https://www.cs.columbia.edu/~hgs/audio/harvard.html):
