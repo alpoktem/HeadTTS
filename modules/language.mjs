@@ -372,6 +372,7 @@ class LanguageBase {
     // Output data
     let phonemes = [];
     const metadata = {
+      phonemes: [],
       words: [], wtimes: [], wdurations: [],
       visemes: [], vtimes: [], vdurations: []
     };
@@ -433,6 +434,7 @@ class LanguageBase {
         // Visemes
         const viseme = part.visemes[j];
         if ( viseme ) {
+          metadata.phonemes.push(ph);
           metadata.visemes.push(viseme);
           metadata.vtimes.push(i);
           i = phonemes.length;
