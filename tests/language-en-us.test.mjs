@@ -14,7 +14,7 @@ describe('Word phonemization', () => {
       
     test.each([
         ['', ""],
-        ['AND', "ən"],
+        ['AND', "ənd"],
         ['MERCHANDISE', 'mˈɜɹʧəndˌIz'],
         ['NOTINDICTIONARY', "nɑtIndɪkʃənɛɹi"],
     ])('phonemizeWord("%s") ➝ %s', async (input, expected) => {
@@ -75,7 +75,7 @@ describe('Generate data', () => {
         const lang = new Language();
         await lang.loadDictionary("./dictionaries/en-us.txt");
         const result = lang.generate("I'm just testing.");
-        expect(result.phonemes).toEqual(['I', 'm', ' ', 'ʤ', 'ˈ', 'ʌ', 's', 't', ' ', 't', 'ˈ', 'ɛ', 's', 't', 'ɪ', 'ŋ', '.']);
+        expect(result.phonemes).toEqual(['ˈ', 'I', 'm', ' ', 'ʤ', 'ˈ', 'ʌ', 's', 't', ' ', 't', 'ˈ', 'ɛ', 's', 't', 'ɪ', 'ŋ', '.']);
         expect(result.metadata.words).toEqual(["I'm ", 'just ', 'testing.']);
         expect(result.metadata.wtimes).toEqual( Array(3).fill( expect.any(Number) ) );
         expect(result.metadata.wdurations).toEqual( Array(3).fill( expect.any(Number) ) );
