@@ -15,7 +15,7 @@
     "transformersModule": "@huggingface/transformers",
 
     "model": "onnx-community/Kokoro-82M-v1.0-ONNX-timestamped",
-    "dtype": "fp32",
+    "dtype": "q4",
     "device": "cpu",
     "styleDim": 256,
     "frameRate": 40,
