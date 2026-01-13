@@ -9,8 +9,7 @@
     "LICENSE",
     "headttsd.json",
     "modules/",
-    "dictionaries/",
-    "voices/"
+    "dictionaries/"
   ],
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
